@@ -94,6 +94,9 @@ export const useAgentChat = (
 
   const [messages, setMessages] = useState<IdentifiableMessage[]>([])
   const [loading, setLoading] = useState(false)
+  const [waitingForResponse, setWaitingForResponse] = useState(false)
+  const [timeoutCountdown, setTimeoutCountdown] = useState<number>(0)
+  const [heartbeatCount, setHeartbeatCount] = useState<number>(0)
   const [reasoning, setReasoning] = useState(false)
   const [executingTools, setExecutingTools] = useState<Set<ToolName>>(new Set())
   const [latestReasoningText, setLatestReasoningText] = useState<string>('')
@@ -114,7 +117,8 @@ export const useAgentChat = (
     getAgentTools,
     agents,
     enablePromptCache,
-    inferenceParams
+    inferenceParams,
+    requestTimeout
   } = useSettings()
 
   // エージェントIDからツール設定を取得
@@ -338,69 +342,120 @@ export const useAgentChat = (
   )
 
   const streamChat = async (props: StreamChatCompletionProps, currentMessages: Message[]) => {
-    // 既存の通信があれば中断
-    if (abortController.current) {
-      abortController.current.abort()
-    }
-
-    // 新しい AbortController を作成
-    abortController.current = new AbortController()
-
-    // モデルがthinkingをサポートしているか確認
-    const thinkingSupportedModelIds = getThinkingSupportedModelIds()
-    const supportsThinking = thinkingSupportedModelIds.some((id) => modelId.includes(id))
-
-    // Context長に基づいてメッセージを制限
-    let limitedMessages = removeTraces(limitContextLength(currentMessages, contextLength))
-
-    // モデルがthinkingをサポートしていない場合、reasoningContentを除外
-    if (!supportsThinking) {
-      limitedMessages = removeReasoningContent(limitedMessages)
-    }
-
-    // Prompt Cache適用（enablePromptCacheが有効な場合）
-    if (enablePromptCache) {
-      const cacheManager = new PromptCacheManager(modelId)
-      props.messages = cacheManager.addCachePointsToMessages(
-        limitedMessages,
-        lastCachePoint.current
-      )
-
-      // キャッシュポイントが更新された場合、次回の会話ためにキャッシュポイントのインデックスを更新
-      if (props.messages[props.messages.length - 1].content?.some((b) => b.cachePoint?.type)) {
-        // 次回の会話のために現在のキャッシュポイントを更新
-        // 現在のメッセージ配列の最後のインデックスを次回の最初のキャッシュポイントとして設定
-        lastCachePoint.current = props.messages.length - 1
+    // Track last data received time for timeout detection
+    let lastDataTime = Date.now()
+    let timedOut = false
+    let requestCompleted = false
+    const WAIT_THRESHOLD = 10000 // 10 seconds without data = waiting state
+    const TIMEOUT_MS = requestTimeout * 60 * 1000 // Convert minutes to milliseconds
+    const HEARTBEAT_INTERVAL = 30000 // 30 seconds heartbeat check
+    
+    const checkWaitingState = setInterval(() => {
+      const timeSinceLastData = Date.now() - lastDataTime
+      const isWaiting = timeSinceLastData > WAIT_THRESHOLD
+      setWaitingForResponse(isWaiting)
+      
+      if (isWaiting) {
+        const remainingTime = Math.max(0, TIMEOUT_MS - timeSinceLastData)
+        setTimeoutCountdown(Math.floor(remainingTime / 1000))
+        
+        // Abort when timeout is reached
+        if (remainingTime === 0 && abortController.current && !timedOut) {
+          timedOut = true
+          console.log(`Request timed out after ${requestTimeout} minutes - aborting request`)
+          
+          // Add timeout message to chat immediately
+          const timeoutMessage = t('Request timed out after {{timeout}} minutes', { timeout: requestTimeout })
+          const timeoutChatMessage: IdentifiableMessage = {
+            id: generateMessageId(),
+            role: ConversationRole.ASSISTANT,
+            content: [{ text: timeoutMessage }]
+          }
+          setMessages((prev) => [...prev, timeoutChatMessage])
+          
+          abortController.current.abort()
+        }
       }
-
-      // システムプロンプトとツール設定にもキャッシュポイントを追加
-      if (props.system) {
-        props.system = cacheManager.addCachePointToSystem(props.system)
+    }, 1000)
+    
+    // Heartbeat check every 30 seconds
+    const heartbeatCheck = setInterval(() => {
+      if (!requestCompleted && abortController.current) {
+        const timeSinceLastData = Date.now() - lastDataTime
+        // If no data for 30+ seconds, verify connection is still alive
+        if (timeSinceLastData >= HEARTBEAT_INTERVAL) {
+          setHeartbeatCount(prev => prev + 1)
+          console.log(`Heartbeat: ${Math.floor(timeSinceLastData / 1000)}s since last data`)
+        }
       }
-
-      if (props.toolConfig) {
-        props.toolConfig = cacheManager.addCachePointToTools(props.toolConfig) as any
-      }
-    } else {
-      props.messages = limitedMessages
-    }
-
-    const generator = streamChatCompletion(props, abortController.current.signal)
-
-    let s = ''
-    let reasoningContentText = ''
-    let reasoningContentSignature = ''
-    let redactedContent
-    let input = ''
-    let role: ConversationRole = 'assistant' // デフォルト値を設定
-    let toolUse: ToolUseBlockStart | undefined = undefined
-    let stopReason
-    const content: ContentBlock[] = []
-
-    let messageStart = false
+    }, HEARTBEAT_INTERVAL)
+    
     try {
-      for await (const json of generator) {
-        if (json.messageStart) {
+      // 既存の通信があれば中断
+      if (abortController.current) {
+        abortController.current.abort()
+      }
+
+      // 新しい AbortController を作成
+      abortController.current = new AbortController()
+
+      // モデルがthinkingをサポートしているか確認
+      const thinkingSupportedModelIds = getThinkingSupportedModelIds()
+      const supportsThinking = thinkingSupportedModelIds.some((id) => modelId.includes(id))
+
+      // Context長に基づいてメッセージを制限
+      let limitedMessages = removeTraces(limitContextLength(currentMessages, contextLength))
+
+      // モデルがthinkingをサポートしていない場合、reasoningContentを除外
+      if (!supportsThinking) {
+        limitedMessages = removeReasoningContent(limitedMessages)
+      }
+
+      // Prompt Cache適用（enablePromptCacheが有効な場合）
+      if (enablePromptCache) {
+        const cacheManager = new PromptCacheManager(modelId)
+        props.messages = cacheManager.addCachePointsToMessages(
+          limitedMessages,
+          lastCachePoint.current
+        )
+
+        // キャッシュポイントが更新された場合、次回の会話ためにキャッシュポイントのインデックスを更新
+        if (props.messages[props.messages.length - 1].content?.some((b) => b.cachePoint?.type)) {
+          // 次回の会話のために現在のキャッシュポイントを更新
+          // 現在のメッセージ配列の最後のインデックスを次回の最初のキャッシュポイントとして設定
+          lastCachePoint.current = props.messages.length - 1
+        }
+
+        // システムプロンプトとツール設定にもキャッシュポイントを追加
+        if (props.system) {
+          props.system = cacheManager.addCachePointToSystem(props.system)
+        }
+
+        if (props.toolConfig) {
+          props.toolConfig = cacheManager.addCachePointToTools(props.toolConfig) as any
+        }
+      } else {
+        props.messages = limitedMessages
+      }
+
+      const generator = streamChatCompletion(props, abortController.current.signal)
+
+      let s = ''
+      let reasoningContentText = ''
+      let reasoningContentSignature = ''
+      let redactedContent
+      let input = ''
+      let role: ConversationRole = 'assistant' // デフォルト値を設定
+      let toolUse: ToolUseBlockStart | undefined = undefined
+      let stopReason
+      const content: ContentBlock[] = []
+
+      let messageStart = false
+      try {
+        for await (const json of generator) {
+          lastDataTime = Date.now() // Update last data time on each chunk
+          
+          if (json.messageStart) {
           role = json.messageStart.role ?? 'assistant' // デフォルト値を設定
           messageStart = true
         } else if (json.messageStop) {
@@ -697,9 +752,22 @@ export const useAgentChat = (
       }
 
       return stopReason
+      } catch (innerError: any) {
+        // Handle streaming errors
+        if (innerError.name === 'AbortError') {
+          console.log('Chat stream aborted')
+          return
+        }
+        throw innerError
+      } finally {
+        requestCompleted = true
+      }
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('Chat stream aborted')
+        if (timedOut) {
+          toast.error(t('Request timed out after {{timeout}} minutes', { timeout: requestTimeout }))
+        }
         return
       }
       console.error({ streamChatRequestError: error })
@@ -718,6 +786,13 @@ export const useAgentChat = (
       await persistMessage(errorMessage)
       throw error
     } finally {
+      // Cleanup intervals
+      clearInterval(checkWaitingState)
+      clearInterval(heartbeatCheck)
+      setWaitingForResponse(false)
+      setTimeoutCountdown(0)
+      setHeartbeatCount(0)
+      
       // 使用済みの AbortController をクリア
       if (abortController.current?.signal.aborted) {
         abortController.current = null
@@ -1167,6 +1242,9 @@ export const useAgentChat = (
     messages,
     loading,
     reasoning,
+    waitingForResponse,
+    timeoutCountdown,
+    heartbeatCount,
     executingTools,
     latestReasoningText, // 最新のreasoningTextを外部に公開
     handleSubmit,

@@ -43,6 +43,9 @@ export default function ChatPage() {
     messages,
     loading,
     reasoning,
+    waitingForResponse,
+    timeoutCountdown,
+    heartbeatCount,
     handleSubmit,
     currentSessionId,
     setCurrentSessionId,
@@ -293,6 +296,9 @@ export default function ChatPage() {
                       messages={messages}
                       loading={loading}
                       reasoning={reasoning}
+                      waitingForResponse={waitingForResponse}
+                      timeoutCountdown={timeoutCountdown}
+                      heartbeatCount={heartbeatCount}
                       deleteMessage={handleDeleteMessage}
                     />
                   </div>
