@@ -8,7 +8,9 @@ import {
   AWSSection,
   AdvancedSection,
   NotificationSection,
-  GuardrailSettings
+  GuardrailSettings,
+  LLMProviderSection,
+  OpenAICompatibleSection
 } from './components/sections'
 import { LightModelSettings } from './components/LightModelSettings'
 import { ConfigDirSection } from './components/sections/ConfigDirSection'
@@ -32,6 +34,13 @@ export const SettingPage: React.FC = () => {
     setRequestTimeout,
     tavilySearchApiKey,
     setTavilySearchApiKey,
+    llmProvider,
+    setLLMProvider,
+    openaiCompatibleConfig,
+    setOpenAICompatibleConfig,
+    addOpenAIModel,
+    removeOpenAIModel,
+    updateOpenAIModel,
     awsRegion,
     setAwsRegion,
     awsAccessKeyId,
@@ -68,6 +77,9 @@ export const SettingPage: React.FC = () => {
     window.store.set('language', newLanguage as any)
   }
 
+  const isBedrockProvider = llmProvider === 'bedrock'
+  const isOpenAIProvider = llmProvider === 'openai-compatible'
+
   return (
     <div
       className="flex flex-col gap-8 min-w-[320px] max-w-[1024px] mx-auto h-full overflow-y-auto
@@ -92,34 +104,50 @@ export const SettingPage: React.FC = () => {
         onUpdateRequestTimeout={setRequestTimeout}
       />
 
-      <AWSSection
-        awsRegion={awsRegion}
-        awsAccessKeyId={awsAccessKeyId}
-        awsSecretAccessKey={awsSecretAccessKey}
-        awsSessionToken={awsSessionToken}
-        onUpdateRegion={setAwsRegion}
-        onUpdateAccessKeyId={setAwsAccessKeyId}
-        onUpdateSecretAccessKey={setAwsSecretAccessKey}
-        onUpdateSessionToken={setAwsSessionToken}
-        useAwsProfile={useAwsProfile}
-        onUpdateUseAwsProfile={setUseAwsProfile}
-        awsProfile={awsProfile}
-        onUpdateAwsProfile={setAwsProfile}
-        proxySettings={proxySettings}
-        onUpdateProxySettings={setProxySettings}
-        currentLLM={currentLLM}
-        availableModels={availableModels}
-        inferenceParams={inferenceParams}
-        bedrockSettings={bedrockSettings}
-        onUpdateLLM={handleChangeLLM}
-        onUpdateInferenceParams={updateInferenceParams}
-        onUpdateBedrockSettings={updateBedrockSettings}
-      />
+      <LLMProviderSection currentProvider={llmProvider} onChangeProvider={setLLMProvider} />
 
-      <GuardrailSettings
-        guardrailSettings={guardrailSettings}
-        onUpdateGuardrailSettings={updateGuardrailSettings}
-      />
+      {isBedrockProvider && (
+        <>
+          <AWSSection
+            awsRegion={awsRegion}
+            awsAccessKeyId={awsAccessKeyId}
+            awsSecretAccessKey={awsSecretAccessKey}
+            awsSessionToken={awsSessionToken}
+            onUpdateRegion={setAwsRegion}
+            onUpdateAccessKeyId={setAwsAccessKeyId}
+            onUpdateSecretAccessKey={setAwsSecretAccessKey}
+            onUpdateSessionToken={setAwsSessionToken}
+            useAwsProfile={useAwsProfile}
+            onUpdateUseAwsProfile={setUseAwsProfile}
+            awsProfile={awsProfile}
+            onUpdateAwsProfile={setAwsProfile}
+            proxySettings={proxySettings}
+            onUpdateProxySettings={setProxySettings}
+            currentLLM={currentLLM}
+            availableModels={availableModels}
+            inferenceParams={inferenceParams}
+            bedrockSettings={bedrockSettings}
+            onUpdateLLM={handleChangeLLM}
+            onUpdateInferenceParams={updateInferenceParams}
+            onUpdateBedrockSettings={updateBedrockSettings}
+          />
+
+          <GuardrailSettings
+            guardrailSettings={guardrailSettings}
+            onUpdateGuardrailSettings={updateGuardrailSettings}
+          />
+        </>
+      )}
+
+      {isOpenAIProvider && (
+        <OpenAICompatibleSection
+          config={openaiCompatibleConfig}
+          onUpdateConfig={setOpenAICompatibleConfig}
+          onAddModel={addOpenAIModel}
+          onRemoveModel={removeOpenAIModel}
+          onUpdateModel={updateOpenAIModel}
+        />
+      )}
 
       <LightModelSettings />
 

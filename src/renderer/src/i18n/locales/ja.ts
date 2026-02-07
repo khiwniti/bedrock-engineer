@@ -124,7 +124,42 @@ const SettingPage = {
   'Invalid model': '無効なモデル',
   'Complete permissions for all Bedrock Engineer features including translation and video generation':
     '翻訳と動画生成を含む、Bedrock Engineer の全機能に対する完全な権限',
-  'Minimal permissions for basic LLM interactions only': '基本的な LLM 対話のみに必要な最小限の権限'
+  'Minimal permissions for basic LLM interactions only': '基本的な LLM 対話のみに必要な最小限の権限',
+
+  // LLM Provider
+  'LLM Provider': 'LLM プロバイダー',
+  'Select the LLM provider to use for AI conversations.':
+    'AI会話に使用するLLMプロバイダーを選択してください。',
+  'OpenAI Compatible': 'OpenAI 互換',
+  'Use AWS credentials to access models via Amazon Bedrock. Supports Claude, Nova, Stability AI, and more.':
+    'AWS認証情報を使用してAmazon Bedrock経由でモデルにアクセスします。Claude、Nova、Stability AIなどに対応。',
+  'Use any OpenAI-compatible API endpoint. Works with OpenAI, Azure OpenAI, Ollama, LM Studio, vLLM, and more. No AWS credentials required.':
+    'OpenAI互換のAPIエンドポイントを使用します。OpenAI、Azure OpenAI、Ollama、LM Studio、vLLMなどに対応。AWS認証情報は不要です。',
+
+  // OpenAI Compatible Settings
+  'OpenAI Compatible API': 'OpenAI 互換 API',
+  'Configure an OpenAI-compatible API endpoint. This works with OpenAI, Azure OpenAI, Ollama, LM Studio, vLLM, and other compatible providers.':
+    'OpenAI互換のAPIエンドポイントを設定します。OpenAI、Azure OpenAI、Ollama、LM Studio、vLLMなどの互換プロバイダーに対応します。',
+  'API Base URL': 'API ベース URL',
+  'The base URL of the API endpoint (e.g., https://api.openai.com/v1, http://localhost:11434/v1)':
+    'APIエンドポイントのベースURL（例：https://api.openai.com/v1、http://localhost:11434/v1）',
+  'API Key': 'API キー',
+  'API key for authentication. Leave empty if not required (e.g., Ollama).':
+    '認証用のAPIキー。不要な場合は空欄にしてください（例：Ollama）。',
+  'Custom Models': 'カスタムモデル',
+  'Define the models available from your OpenAI-compatible endpoint. These will appear in the model selector.':
+    'OpenAI互換エンドポイントで使用可能なモデルを定義します。モデルセレクターに表示されます。',
+  'Add New Model': '新しいモデルを追加',
+  'Model ID': 'モデル ID',
+  'The model ID to send in API requests': 'APIリクエストで送信するモデルID',
+  'Display Name': '表示名',
+  'The name displayed in the model selector UI': 'モデルセレクターUIに表示される名前',
+  'Supports Tool Use (Function Calling)': 'ツール使用（関数呼び出し）をサポート',
+  'Add Model': 'モデルを追加',
+  Add: '追加',
+  'Tool Use': 'ツール使用',
+  'No models configured. Add at least one model to use the OpenAI-compatible provider.':
+    'モデルが設定されていません。OpenAI互換プロバイダーを使用するには、少なくとも1つのモデルを追加してください。'
 }
 
 const StepFunctionsGeneratorPage = {

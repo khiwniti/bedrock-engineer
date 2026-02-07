@@ -10,6 +10,7 @@ import {
 import { CustomAgent } from '../types/agent-chat'
 import { BedrockAgent } from '../types/agent'
 import { AWSCredentials } from '../main/api/bedrock/types'
+import type { LLMProvider, OpenAICompatibleConfig } from '../types/llm-provider'
 import { CodeInterpreterContainerConfig } from './tools/handlers/interpreter/types'
 
 const DEFAULT_SHELL =
@@ -122,6 +123,12 @@ type StoreScheme = {
     }
   }
 
+  /** LLMプロバイダー選択（bedrock or openai-compatible） */
+  llmProvider: LLMProvider
+
+  /** OpenAI互換API設定 */
+  openaiCompatible?: OpenAICompatibleConfig
+
   /** AWS認証情報とリージョン設定 */
   aws: AWSCredentials
 
@@ -210,6 +217,22 @@ const init = () => {
   const language = electronStore.get('language')
   if (language === undefined) {
     electronStore.set('language', 'en')
+  }
+
+  // Initialize LLM provider if not present (default to bedrock for backward compatibility)
+  const llmProvider = electronStore.get('llmProvider')
+  if (!llmProvider) {
+    electronStore.set('llmProvider', 'bedrock')
+  }
+
+  // Initialize OpenAI-compatible config if not present
+  const openaiCompatible = electronStore.get('openaiCompatible')
+  if (!openaiCompatible) {
+    electronStore.set('openaiCompatible', {
+      apiKey: '',
+      baseUrl: '',
+      customModels: []
+    })
   }
 
   // Initialize AWS settings if not present

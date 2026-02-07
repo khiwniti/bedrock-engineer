@@ -28,7 +28,7 @@ export interface LLM {
   readonly modelId: string // Make it readonly for immutability
   readonly modelName: string
   readonly toolUse: boolean
-  readonly regions: readonly BedrockSupportRegion[] // Use the specific region type
+  readonly regions?: readonly BedrockSupportRegion[] // Optional for non-Bedrock models
   readonly maxTokensLimit?: number // Optional parameter for model-specific limits
   readonly supportsThinking?: boolean // Whether the model supports extended thinking
   readonly isInferenceProfile?: boolean // Whether this is an inference profile
@@ -42,8 +42,9 @@ export const isValidLLM = (llm: LLM): boolean => {
     typeof llm.modelId === 'string' &&
     typeof llm.modelName === 'string' &&
     typeof llm.toolUse === 'boolean' &&
-    Array.isArray(llm.regions) &&
-    llm.regions.every((region) => BEDROCK_SUPPORTED_REGIONS.includes(region))
+    (!llm.regions ||
+      (Array.isArray(llm.regions) &&
+        llm.regions.every((region) => BEDROCK_SUPPORTED_REGIONS.includes(region))))
   )
 }
 

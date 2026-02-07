@@ -51,6 +51,9 @@ export type InferenceParams = {
   thinking?: ThinkingMode
 }
 
+// Re-export shared LLM provider types from common types directory
+export type { LLMProvider, OpenAICompatibleConfig, OpenAICompatibleModel } from '../../../types/llm-provider'
+
 export type ServiceContext = {
   store: ConfigStore
 }
