@@ -159,7 +159,10 @@ const SettingPage = {
   Add: '追加',
   'Tool Use': 'ツール使用',
   'No models configured. Add at least one model to use the OpenAI-compatible provider.':
-    'モデルが設定されていません。OpenAI互換プロバイダーを使用するには、少なくとも1つのモデルを追加してください。'
+    'モデルが設定されていません。OpenAI互換プロバイダーを使用するには、少なくとも1つのモデルを追加してください。',
+  'No models available. Please check your provider configuration in settings above.':
+    'モデルが利用できません。上の設定でプロバイダーの設定を確認してください。',
+  Cancel: 'キャンセル'
 }
 
 const StepFunctionsGeneratorPage = {

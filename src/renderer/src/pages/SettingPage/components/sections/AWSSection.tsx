@@ -1,14 +1,12 @@
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FcKey, FcElectronics, FcMindMap } from 'react-icons/fc'
+import { FcKey, FcElectronics } from 'react-icons/fc'
 import { IoMdClose } from 'react-icons/io'
 import { SettingSection } from '../SettingSection'
 import { SettingInput } from '../SettingInput'
 import { SettingSelect } from '../SettingSelect'
 import { IAMPolicyModal } from '../IAMPolicyModal'
-import { ThinkingModeSettings } from '../ThinkingModeSettings'
 import { AWS_REGIONS } from '@/types/aws-regions'
-import { LLM } from '@/types/llm'
 import { NovaSonicStatus } from '../NovaSonicStatus'
 
 interface AWSSectionProps {
@@ -40,20 +38,11 @@ interface AWSSectionProps {
   onUpdateProxySettings: (settings: Partial<AWSSectionProps['proxySettings']>) => void
 
   // Bedrock Settings
-  currentLLM: LLM
-  availableModels: LLM[]
-  inferenceParams: {
-    maxTokens: number
-    temperature: number
-    topP?: number
-  }
   bedrockSettings: {
     enableRegionFailover: boolean
     availableFailoverRegions: string[]
     enableInferenceProfiles: boolean
   }
-  onUpdateLLM: (modelId: string) => void
-  onUpdateInferenceParams: (params: Partial<AWSSectionProps['inferenceParams']>) => void
   onUpdateBedrockSettings: (settings: Partial<AWSSectionProps['bedrockSettings']>) => void
 }
 
@@ -79,12 +68,7 @@ export const AWSSection: React.FC<AWSSectionProps> = ({
   onUpdateProxySettings,
 
   // Bedrock Settings
-  currentLLM,
-  availableModels,
-  inferenceParams,
   bedrockSettings,
-  onUpdateLLM,
-  onUpdateInferenceParams,
   onUpdateBedrockSettings
 }) => {
   const { t } = useTranslation()
@@ -106,11 +90,6 @@ export const AWSSection: React.FC<AWSSectionProps> = ({
       }))
     }
   ]
-
-  const modelOptions = availableModels.map((model) => ({
-    value: model.modelId,
-    label: model.modelName
-  }))
 
   // Bedrock対応リージョンのみをフィルタリング
   const bedrockRegions = AWS_REGIONS.filter((region) => region.bedrockSupported)
@@ -134,7 +113,6 @@ export const AWSSection: React.FC<AWSSectionProps> = ({
 
   const handleFailoverToggle = (checked: boolean) => {
     if (!checked) {
-      // フェイルオーバーを無効にする場合は、選択されているリージョンをクリア
       onUpdateBedrockSettings({
         enableRegionFailover: false,
         availableFailoverRegions: []
@@ -244,13 +222,6 @@ export const AWSSection: React.FC<AWSSectionProps> = ({
 
       <SettingSection title={t('Amazon Bedrock')} icon={FcElectronics}>
         <div className="space-y-4">
-          <SettingSelect
-            label={t('LLM (Large Language Model)')}
-            value={currentLLM?.modelId}
-            options={modelOptions}
-            onChange={(e) => onUpdateLLM(e.target.value)}
-          />
-
           <div className="space-y-2">
             <div className="space-y-4">
               <label className="inline-flex items-center cursor-pointer">
@@ -341,50 +312,6 @@ export const AWSSection: React.FC<AWSSectionProps> = ({
               )}
             </div>
           </div>
-        </div>
-      </SettingSection>
-
-      <SettingSection title={t('Inference Parameters')} icon={FcMindMap}>
-        <div className="space-y-4">
-          <SettingInput
-            label={t('Max Tokens')}
-            type="number"
-            placeholder={t('Max tokens')}
-            value={inferenceParams.maxTokens}
-            min={1}
-            max={currentLLM?.maxTokensLimit || 8192}
-            onChange={(e) => {
-              onUpdateInferenceParams({ maxTokens: parseInt(e.target.value, 10) })
-            }}
-          />
-
-          <SettingInput
-            label={t('Temperature')}
-            type="number"
-            placeholder={t('Temperature')}
-            value={inferenceParams.temperature}
-            min={0}
-            max={1.0}
-            step={0.1}
-            onChange={(e) => {
-              onUpdateInferenceParams({ temperature: parseFloat(e.target.value) })
-            }}
-          />
-
-          <SettingInput
-            label={t('topP')}
-            type="number"
-            placeholder={t('topP')}
-            value={inferenceParams.topP}
-            min={0}
-            max={1}
-            step={0.1}
-            onChange={(e) => {
-              onUpdateInferenceParams({ topP: parseFloat(e.target.value) })
-            }}
-          />
-
-          <ThinkingModeSettings />
         </div>
       </SettingSection>
 

@@ -10,7 +10,8 @@ import {
   NotificationSection,
   GuardrailSettings,
   LLMProviderSection,
-  OpenAICompatibleSection
+  OpenAICompatibleSection,
+  ModelSettingsSection
 } from './components/sections'
 import { LightModelSettings } from './components/LightModelSettings'
 import { ConfigDirSection } from './components/sections/ConfigDirSection'
@@ -107,36 +108,24 @@ export const SettingPage: React.FC = () => {
       <LLMProviderSection currentProvider={llmProvider} onChangeProvider={setLLMProvider} />
 
       {isBedrockProvider && (
-        <>
-          <AWSSection
-            awsRegion={awsRegion}
-            awsAccessKeyId={awsAccessKeyId}
-            awsSecretAccessKey={awsSecretAccessKey}
-            awsSessionToken={awsSessionToken}
-            onUpdateRegion={setAwsRegion}
-            onUpdateAccessKeyId={setAwsAccessKeyId}
-            onUpdateSecretAccessKey={setAwsSecretAccessKey}
-            onUpdateSessionToken={setAwsSessionToken}
-            useAwsProfile={useAwsProfile}
-            onUpdateUseAwsProfile={setUseAwsProfile}
-            awsProfile={awsProfile}
-            onUpdateAwsProfile={setAwsProfile}
-            proxySettings={proxySettings}
-            onUpdateProxySettings={setProxySettings}
-            currentLLM={currentLLM}
-            availableModels={availableModels}
-            inferenceParams={inferenceParams}
-            bedrockSettings={bedrockSettings}
-            onUpdateLLM={handleChangeLLM}
-            onUpdateInferenceParams={updateInferenceParams}
-            onUpdateBedrockSettings={updateBedrockSettings}
-          />
-
-          <GuardrailSettings
-            guardrailSettings={guardrailSettings}
-            onUpdateGuardrailSettings={updateGuardrailSettings}
-          />
-        </>
+        <AWSSection
+          awsRegion={awsRegion}
+          awsAccessKeyId={awsAccessKeyId}
+          awsSecretAccessKey={awsSecretAccessKey}
+          awsSessionToken={awsSessionToken}
+          onUpdateRegion={setAwsRegion}
+          onUpdateAccessKeyId={setAwsAccessKeyId}
+          onUpdateSecretAccessKey={setAwsSecretAccessKey}
+          onUpdateSessionToken={setAwsSessionToken}
+          useAwsProfile={useAwsProfile}
+          onUpdateUseAwsProfile={setUseAwsProfile}
+          awsProfile={awsProfile}
+          onUpdateAwsProfile={setAwsProfile}
+          proxySettings={proxySettings}
+          onUpdateProxySettings={setProxySettings}
+          bedrockSettings={bedrockSettings}
+          onUpdateBedrockSettings={updateBedrockSettings}
+        />
       )}
 
       {isOpenAIProvider && (
@@ -146,6 +135,22 @@ export const SettingPage: React.FC = () => {
           onAddModel={addOpenAIModel}
           onRemoveModel={removeOpenAIModel}
           onUpdateModel={updateOpenAIModel}
+        />
+      )}
+
+      {/* Model selector and inference params - shared across all providers */}
+      <ModelSettingsSection
+        currentLLM={currentLLM}
+        availableModels={availableModels}
+        inferenceParams={inferenceParams}
+        onUpdateLLM={handleChangeLLM}
+        onUpdateInferenceParams={updateInferenceParams}
+      />
+
+      {isBedrockProvider && (
+        <GuardrailSettings
+          guardrailSettings={guardrailSettings}
+          onUpdateGuardrailSettings={updateGuardrailSettings}
         />
       )}
 
