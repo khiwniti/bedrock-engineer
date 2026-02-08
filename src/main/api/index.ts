@@ -4,6 +4,7 @@ import { RequestHandler, NextFunction } from 'express'
 import { RetrieveAndGenerateCommandInput } from '@aws-sdk/client-bedrock-agent-runtime'
 import { BedrockService, CallConverseAPIProps } from './bedrock'
 import { createNovaSonicClient } from './bedrock/client'
+import { OpenAIConverseService } from './openai-compatible'
 import { store } from '../../preload/store'
 import { createCategoryLogger } from '../../common/logger'
 import { Server } from 'socket.io'
@@ -11,12 +12,28 @@ import http from 'http'
 import { SonicToolExecutor } from './sonic/tool-executor'
 import { checkNovaSonicRegionSupport, testBedrockConnectivity } from './sonic/regionCheck'
 import { WebsiteRecommendationFactory } from './bedrock/services/factories/websiteRecommendationFactory'
+import type { LLMProvider, OpenAICompatibleConfig } from './bedrock/types'
 
 // Create category logger for API
 const apiLogger = createCategoryLogger('api:express')
 const bedrockLogger = createCategoryLogger('api:bedrock')
 
 export const bedrock = new BedrockService({ store })
+const openaiService = new OpenAIConverseService({ store })
+
+/**
+ * Check which LLM provider is currently selected
+ */
+function getCurrentProvider(): LLMProvider {
+  return (store.get('llmProvider') as LLMProvider) || 'bedrock'
+}
+
+/**
+ * Check if the current provider is OpenAI-compatible
+ */
+function isOpenAICompatible(): boolean {
+  return getCurrentProvider() === 'openai-compatible'
+}
 
 interface PromiseRequestHandler {
   (req: Request, res: Response, next: NextFunction): Promise<unknown>
@@ -99,7 +116,10 @@ api.post(
     res.setHeader('X-Accel-Buffering', 'no')
 
     try {
-      const result = await bedrock.converseStream(req.body)
+      // Route to the appropriate service based on provider setting
+      const result = isOpenAICompatible()
+        ? await openaiService.converseStream(req.body)
+        : await bedrock.converseStream(req.body)
 
       if (!result.stream) {
         return res.end()
@@ -113,7 +133,8 @@ api.post(
         errorName: error.name,
         message: error.message,
         stack: error.stack,
-        modelId: req.body.modelId
+        modelId: req.body.modelId,
+        provider: getCurrentProvider()
       })
 
       if (error.name === 'ValidationException') {
@@ -138,14 +159,18 @@ api.post(
     res.setHeader('Content-Type', 'application/json')
 
     try {
-      const result = await bedrock.converse(req.body)
+      // Route to the appropriate service based on provider setting
+      const result = isOpenAICompatible()
+        ? await openaiService.converse(req.body)
+        : await bedrock.converse(req.body)
       return res.json(result)
     } catch (error: any) {
       bedrockLogger.error('Conversation error', {
         errorName: error.name,
         message: error.message,
         stack: error.stack,
-        modelId: req.body.modelId
+        modelId: req.body.modelId,
+        provider: getCurrentProvider()
       })
       return res.status(500).send(error)
     }
@@ -186,13 +211,28 @@ api.get(
   wrap(async (_req: Request, res) => {
     res.setHeader('Content-Type', 'application/json')
     try {
+      if (isOpenAICompatible()) {
+        // Return custom models from OpenAI-compatible config
+        const config = store.get('openaiCompatible') as OpenAICompatibleConfig | undefined
+        const customModels = config?.customModels || []
+        const result = customModels.map((model) => ({
+          modelId: model.modelId,
+          modelName: model.modelName,
+          toolUse: model.toolUse,
+          maxTokensLimit: model.maxTokensLimit,
+          supportsThinking: model.supportsThinking || false
+        }))
+        return res.json(result)
+      }
+
       const result = await bedrock.listModels()
       return res.json(result)
     } catch (error: any) {
       bedrockLogger.error('ListModels error', {
         errorName: error.name,
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
+        provider: getCurrentProvider()
       })
       return res.status(500).send(error)
     }

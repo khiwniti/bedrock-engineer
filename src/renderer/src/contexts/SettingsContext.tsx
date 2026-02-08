@@ -25,6 +25,7 @@ import {
 } from '@/types/llm'
 import { useModelManagement } from '@renderer/hooks/useModelManagement'
 import type { AwsCredentialIdentity } from '@smithy/types'
+import type { LLMProvider, OpenAICompatibleConfig, OpenAICompatibleModel } from '@/types/llm-provider'
 import { BedrockAgent } from '@/types/agent'
 import { AgentCategory } from '@/types/agent-chat'
 import { getToolsForCategory } from '../constants/defaultToolSets'
@@ -151,6 +152,17 @@ export interface SettingsContextType {
   tavilySearchApiKey: string
   setTavilySearchApiKey: (apiKey: string) => void
   enabledTavilySearch: boolean
+
+  // LLM Provider Settings
+  llmProvider: LLMProvider
+  setLLMProvider: (provider: LLMProvider) => void
+
+  // OpenAI-Compatible Settings
+  openaiCompatibleConfig: OpenAICompatibleConfig
+  setOpenAICompatibleConfig: (config: Partial<OpenAICompatibleConfig>) => void
+  addOpenAIModel: (model: OpenAICompatibleModel) => void
+  removeOpenAIModel: (modelId: string) => void
+  updateOpenAIModel: (modelId: string, model: Partial<OpenAICompatibleModel>) => void
 
   // AWS Settings
   awsRegion: string
@@ -384,6 +396,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Tavily Search Settings
   const [tavilySearchApiKey, setStateApiKey] = useState<string>('')
 
+  // LLM Provider Settings
+  const [llmProvider, setStateLLMProvider] = useState<LLMProvider>('bedrock')
+
+  // OpenAI-Compatible Settings
+  const [openaiCompatibleConfig, setStateOpenaiCompatibleConfig] = useState<OpenAICompatibleConfig>({
+    apiKey: '',
+    baseUrl: '',
+    customModels: []
+  })
+
   // AWS Settings
   const [awsRegion, setStateAwsRegion] = useState<string>('')
   const [awsAccessKeyId, setStateAwsAccessKeyId] = useState<string>('')
@@ -572,6 +594,22 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setStateApiKey(tavilySearchConfig.apikey)
     }
 
+    // Load LLM Provider Settings
+    const storedLLMProvider = window.store.get('llmProvider') as LLMProvider
+    if (storedLLMProvider) {
+      setStateLLMProvider(storedLLMProvider)
+    }
+
+    // Load OpenAI-Compatible Settings
+    const storedOpenaiConfig = window.store.get('openaiCompatible') as OpenAICompatibleConfig
+    if (storedOpenaiConfig) {
+      setStateOpenaiCompatibleConfig({
+        apiKey: storedOpenaiConfig.apiKey || '',
+        baseUrl: storedOpenaiConfig.baseUrl || '',
+        customModels: storedOpenaiConfig.customModels || []
+      })
+    }
+
     // Load AWS Settings
     const awsConfig = window.store.get('aws')
     if (awsConfig) {
@@ -739,7 +777,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     fetchModels()
-  }, [awsRegion, awsAccessKeyId, awsSecretAccessKey, awsProfile, useAwsProfile])
+  }, [awsRegion, awsAccessKeyId, awsSecretAccessKey, awsProfile, useAwsProfile, llmProvider])
 
   // MCPツールをロードする - 状態を更新せずツールのみを返すように修正
   const fetchMcpTools = useCallback(async (mcpServers?: McpServerConfig[]) => {
@@ -989,6 +1027,46 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     window.store.set('tavilySearch', {
       apikey: apikey
     })
+  }
+
+  const setLLMProvider = (provider: LLMProvider) => {
+    setStateLLMProvider(provider)
+    window.store.set('llmProvider', provider)
+  }
+
+  const setOpenAICompatibleConfig = (config: Partial<OpenAICompatibleConfig>) => {
+    const updated = { ...openaiCompatibleConfig, ...config }
+    setStateOpenaiCompatibleConfig(updated)
+    window.store.set('openaiCompatible', updated)
+  }
+
+  const addOpenAIModel = (model: OpenAICompatibleModel) => {
+    const updated = {
+      ...openaiCompatibleConfig,
+      customModels: [...openaiCompatibleConfig.customModels, model]
+    }
+    setStateOpenaiCompatibleConfig(updated)
+    window.store.set('openaiCompatible', updated)
+  }
+
+  const removeOpenAIModel = (modelId: string) => {
+    const updated = {
+      ...openaiCompatibleConfig,
+      customModels: openaiCompatibleConfig.customModels.filter((m) => m.modelId !== modelId)
+    }
+    setStateOpenaiCompatibleConfig(updated)
+    window.store.set('openaiCompatible', updated)
+  }
+
+  const updateOpenAIModel = (modelId: string, model: Partial<OpenAICompatibleModel>) => {
+    const updated = {
+      ...openaiCompatibleConfig,
+      customModels: openaiCompatibleConfig.customModels.map((m) =>
+        m.modelId === modelId ? { ...m, ...model } : m
+      )
+    }
+    setStateOpenaiCompatibleConfig(updated)
+    window.store.set('openaiCompatible', updated)
   }
 
   const setAwsRegion = (region: string) => {
@@ -1932,6 +2010,17 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     tavilySearchApiKey,
     setTavilySearchApiKey,
     enabledTavilySearch,
+
+    // LLM Provider Settings
+    llmProvider,
+    setLLMProvider,
+
+    // OpenAI-Compatible Settings
+    openaiCompatibleConfig,
+    setOpenAICompatibleConfig,
+    addOpenAIModel,
+    removeOpenAIModel,
+    updateOpenAIModel,
 
     // AWS Settings
     awsRegion,

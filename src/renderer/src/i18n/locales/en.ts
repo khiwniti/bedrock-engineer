@@ -125,7 +125,45 @@ const SettingPage = {
   'Complete permissions for all Bedrock Engineer features including translation and video generation':
     'Complete permissions for all Bedrock Engineer features including translation and video generation',
   'Minimal permissions for basic LLM interactions only':
-    'Minimal permissions for basic LLM interactions only'
+    'Minimal permissions for basic LLM interactions only',
+
+  // LLM Provider
+  'LLM Provider': 'LLM Provider',
+  'Select the LLM provider to use for AI conversations.':
+    'Select the LLM provider to use for AI conversations.',
+  'OpenAI Compatible': 'OpenAI Compatible',
+  'Use AWS credentials to access models via Amazon Bedrock. Supports Claude, Nova, Stability AI, and more.':
+    'Use AWS credentials to access models via Amazon Bedrock. Supports Claude, Nova, Stability AI, and more.',
+  'Use any OpenAI-compatible API endpoint. Works with OpenAI, Azure OpenAI, Ollama, LM Studio, vLLM, and more. No AWS credentials required.':
+    'Use any OpenAI-compatible API endpoint. Works with OpenAI, Azure OpenAI, Ollama, LM Studio, vLLM, and more. No AWS credentials required.',
+
+  // OpenAI Compatible Settings
+  'OpenAI Compatible API': 'OpenAI Compatible API',
+  'Configure an OpenAI-compatible API endpoint. This works with OpenAI, Azure OpenAI, Ollama, LM Studio, vLLM, and other compatible providers.':
+    'Configure an OpenAI-compatible API endpoint. This works with OpenAI, Azure OpenAI, Ollama, LM Studio, vLLM, and other compatible providers.',
+  'API Base URL': 'API Base URL',
+  'The base URL of the API endpoint (e.g., https://api.openai.com/v1, http://localhost:11434/v1)':
+    'The base URL of the API endpoint (e.g., https://api.openai.com/v1, http://localhost:11434/v1)',
+  'API Key': 'API Key',
+  'API key for authentication. Leave empty if not required (e.g., Ollama).':
+    'API key for authentication. Leave empty if not required (e.g., Ollama).',
+  'Custom Models': 'Custom Models',
+  'Define the models available from your OpenAI-compatible endpoint. These will appear in the model selector.':
+    'Define the models available from your OpenAI-compatible endpoint. These will appear in the model selector.',
+  'Add New Model': 'Add New Model',
+  'Model ID': 'Model ID',
+  'The model ID to send in API requests': 'The model ID to send in API requests',
+  'Display Name': 'Display Name',
+  'The name displayed in the model selector UI': 'The name displayed in the model selector UI',
+  'Supports Tool Use (Function Calling)': 'Supports Tool Use (Function Calling)',
+  'Add Model': 'Add Model',
+  Add: 'Add',
+  'Tool Use': 'Tool Use',
+  'No models configured. Add at least one model to use the OpenAI-compatible provider.':
+    'No models configured. Add at least one model to use the OpenAI-compatible provider.',
+  'No models available. Please check your provider configuration in settings above.':
+    'No models available. Please check your provider configuration in settings above.',
+  Cancel: 'Cancel'
 }
 
 const StepFunctionsGeneratorPage = {
